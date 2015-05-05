@@ -1,3 +1,8 @@
+This is a WIP that should yield a sneaky toolchain to inject code into .apk files by rewriting them AoT.
+The intent is to intercept OpenGL ES calls and do "other" noble-good things that the original authors hadn't considered.
+
+Read "Tu Use" when you want to setup.
+
 # Tu Use
 
 See [by hand](by-hand/) for instructions on how to generate `.jimp`
@@ -41,29 +46,3 @@ These instructions are detailed - not hard or long.
 1. You're done it - the project is ready to play
 	* Watch those syntax errors trickle out of the .scala files!
 
-
-# Structure
-
-This "thing" is done in 2/3 steps
-
-1. lexing and parsing - read the text file and construct a sort of Concrete Syntax Tree
-	* this is handled by Antlr
-1. syntax analysis - read the CST and construct a sort of AST as an IR
-	* this is handled by a `.scala` `object` named `nottingham/ibit/jimp/Syntax.scala` that consumes the Antlr constructs
-
-# Validation
-
-There were some old unit tests that relied on a mountain of `.jimp` text files.
-Now - only a few of those remain; what's left is an auto-generated set of tests from a dumped `.zip` file.
-(The `.zip` holds the original mountain of text - only a slight improvement)
-
-## Jimp Tests / GLTron.apk
-
-These were picked out of a port of GLTron.
- 
-## Soak Tests / Android.jar
-
-There's an additional set of tests in `soak.zip` that can be added by running the `soak` goal.
-These were generated the `android.jar` in Version 22 of the ADK.
-They seem a bit excessive - but they're their if you want them. 
-(If you want to get rid of them - delete your `build/generated/` directory and re-run the `test` goal)
