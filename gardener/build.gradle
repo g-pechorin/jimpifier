@@ -1,0 +1,12 @@
+description = """
+This module provides traits to mess with trees of AST
+
+Messing with trees == gardening right?
+
+"""
+
+dependencies {
+	compile project(':compiler') // should be ast
+
+	testCompile project(':compiler').sourceSets.test.output // good as-is
+}

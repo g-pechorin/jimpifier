@@ -7,9 +7,9 @@ import org.antlr.v4.runtime.{ANTLRInputStream, BailErrorStrategy, CommonTokenStr
 
 trait TAntlr4Parser {
 
-	def getName(): String
+	def getName: String
 
-	def parser(sourceStream: InputStream, name: String = getName()): JimpParser = {
+	def parser(sourceStream: InputStream, name: String = getName): JimpParser = {
 		val parser =
 			new JimpParser(new CommonTokenStream(
 				new JimpLexer({
