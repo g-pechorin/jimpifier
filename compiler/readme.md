@@ -36,3 +36,5 @@ This tool will probably fall-over for a whole bunch of reasons.
 * probably can't handle `native`, `interface` or `abstract` methods and classes
 * `jimpifier.ast` and `jimpifier.compiler` should be in separate modules
 	* ... but I know that there's CST -> AST logic in `jimpifier.ast` which shouldn't be there
+* needs a "real" type system
+	* I wish there was some way to walk the types of objects
