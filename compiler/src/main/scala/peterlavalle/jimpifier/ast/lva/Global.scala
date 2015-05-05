@@ -6,5 +6,5 @@ case class Global(container: List[String], name: String) extends TLValue {
 
 	(name :: container).foreach(n => require(n.matches("[\\w\\$]+")))
 
-	override lazy val tType: String = ???
+	override lazy val tType = ???
 }

@@ -2,6 +2,7 @@ package peterlavalle.jimpifier.compile
 
 import org.antlr.v4.runtime.tree.TerminalNode
 import peterlavalle.jimpifier.ast.Visibility
+import peterlavalle.jimpifier.ast.typ.{ClassType, Primitive, TType, ArrayOf}
 import peterlavalle.jimpifier.compile.JimpParser._
 import peterlavalle.jimpifier.ast._
 import peterlavalle.jimpifier.ast.lva.{Accessor, Global, Indexor}
@@ -12,6 +13,14 @@ import peterlavalle.jimpifier.ast.tra.{TLValue, TRValue, TSSA}
 import scala.collection.JavaConversions._
 
 object Syntax {
+
+	def tType(name: String): TType =
+		if (name.endsWith("[]"))
+			ArrayOf(tType(name.reverse.substring(2).reverse))
+		else if (Primitive ? name)
+			Primitive(name)
+		else
+			ClassType(name)
 
 	def apply(t: Literal_classContext) = Literal.LiteralClass(t.STRING().getText.substring(1).reverse.substring(1).reverse)
 
@@ -40,38 +49,39 @@ object Syntax {
 			isFinal = null != module.K_final(),
 			isEnum = null != module.K_enum(),
 			visibility = Syntax(module.K_visibility()),
-			name = module.classname(0).getText,
-			tType = module.classname(1).getText,
+			name = tType(module.classname(0).getText),
+			parent = tType(module.classname(1).getText),
 			fields = module.field().map(apply).toList,
 			methods = module.method().map(apply).toList
 		)
 	}
 
-	def apply(field: FieldContext): Field = {
+	def apply(field: FieldContext): Field =
 		Field(
 			visibility = Syntax(field.K_visibility()),
 			isStatic = null != field.K_static(),
 			isFinal = null != field.K_final(),
 			name = field.DUMBNAME().getText,
-			tType = field.typename().getText)
-	}
+			tType = tType(field.typename().getText)
+		)
 
 	def apply(handler: HandlerContext): Handler =
 		Handler(
-			handler.classname().getText,
+			ClassType(handler.classname().getText),
 			handler.DUMBNAME(0).getText,
 			handler.DUMBNAME(1).getText,
 			handler.DUMBNAME(2).getText
 		)
 
-	def apply(classname: ClassnameContext): String =
-		classname.getText
+	def apply(classname: ClassnameContext): TType =
+		tType(classname.getText)
 
-	def apply(typename: TypenameContext): String =
-		typename.BRACK_CLOSE().foldLeft(Syntax(typename.classname()))((l, r) => l + "[]")
+	def apply(typename: TypenameContext): TType =
+		typename.BRACK_CLOSE().foldLeft(Syntax(typename.classname()))((l, r) => ArrayOf(l))
 
-	def apply(registers: RegistersContext): List[Register] =
+	def apply(registers: RegistersContext): List[Register] = {
 		registers.REGISTER().map(_.getText).map(Register(_, apply(registers.typename()))).toList
+	}
 
 	def lv(lookup: (TerminalNode => Register), context: LvalueContext): TLValue = {
 		context match {
@@ -172,7 +182,7 @@ object Syntax {
 			case allocate: AllocateContext =>
 				Assign(
 					lvalue(allocate.lvalue()),
-					AllocateObject(allocate.typename().getText)
+					AllocateObject(tType(allocate.typename().getText).asInstanceOf[ClassType])
 				)
 
 			case assign: AssignContext =>
@@ -185,7 +195,7 @@ object Syntax {
 				Assign(
 					lvalue(cast.lvalue()),
 					CastValue(
-						cast.typename().getText,
+						tType(cast.typename().getText),
 						rvalue(cast.rvalue())
 					)
 				)
@@ -256,7 +266,7 @@ object Syntax {
 				Assign(
 					lvalue(newarray.lvalue()),
 					NewArray(
-						newarray.typename().getText,
+						tType(newarray.typename().getText).asInstanceOf[ArrayOf],
 						rvalue(newarray.rvalue())
 					)
 				)
@@ -286,12 +296,14 @@ object Syntax {
 	def apply(method: MethodContext): Method = {
 		val registers = method.registers().flatMap(apply).toList
 
+		// TODO ; build the blocks "here" but use the handlers to infer which type the @caughtexception is
+
 		Method(
 			visibility = Syntax(method.K_visibility()),
 			isStatic = null != method.K_static(),
 			name = method.method_name().getText,
 			args = method.typename().tail.map(apply).toList,
-			tType = method.typename().head.getText,
+			tType = tType(method.typename().head.getText),
 			registers = registers,
 			blocks = Block(null, method.statement().map(Syntax(registers, _)).toList) :: method.block().map(b => Block(b.DUMBNAME().getText, b.statement().map(Syntax(registers, _)).toList)).toList,
 			handlers = method.handler().map(apply).toList
