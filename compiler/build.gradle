@@ -1,0 +1,181 @@
+
+class AutoTestTask extends DefaultTask {
+
+	public String pakcage = name
+
+	public File generatedScala = project.file("$project.buildDir/generated/$name-scala/")
+
+	public File generatedResources = project.file("$project.buildDir/generated/$name-resources/")
+
+	def zipFile = project.file("src/test/$name" + '.zip')
+
+	@TaskAction
+	def unpack() {
+
+		ant.unzip(src: zipFile, dest: new File(generatedResources, pakcage.replace('.', '/')), overwrite: "true")
+
+		writeTraitFile(
+				new File(generatedResources, name).list()
+		).close()
+	}
+
+	def writeTraitFile(String[] names) {
+		def className = 'T' + name.substring(0, 1).toUpperCase() + name.substring(1) + 'Tests'
+		def traitFile = new File(generatedScala, ("$pakcage" + ".$className").replace('.', '/') + '.scala')
+
+		assert (traitFile.parentFile.exists() || traitFile.parentFile.mkdirs())
+
+		def traitWriter = new FileWriter(traitFile)
+
+		traitWriter.println("package $pakcage")
+		traitWriter.println('')
+		traitWriter.println("trait $className {")
+		traitWriter.println('')
+		traitWriter.println('\tdef apply(sourceName: String)')
+		traitWriter.println('')
+		names.each {
+			def jimp = '"' + it + '"'
+			def name = it.replaceAll('\\.jimp$', '').replaceAll('\\W+', '_')
+
+			traitWriter.println("\tdef test$name() = apply($jimp)")
+		}
+		traitWriter.println('')
+		traitWriter.println('}')
+
+		traitWriter.flush()
+
+		return traitWriter;
+	}
+}
+
+
+task jimp(type: AutoTestTask)
+compileTestScala.dependsOn jimp
+
+sourceSets.test.scala.srcDirs += jimp.generatedScala
+sourceSets.test.resources.srcDirs += jimp.generatedResources
+
+task soak(type: AutoTestTask) {
+	doLast {
+		File testFile = new File((File) generatedScala, ("$pakcage" + ".SoakTest").replace('.', '/') + '.scala')
+
+		assert (testFile.parentFile.exists() || testFile.parentFile.mkdirs())
+
+		def testWriter = new FileWriter(testFile)
+
+		testWriter.println("package $pakcage")
+		testWriter.println('')
+		testWriter.println('import junit.framework.TestCase')
+		testWriter.println('import peterlavalle.jimpifier.compile.{JimpParser, JimpLexer, Syntax}')
+		testWriter.println('import org.antlr.v4.runtime.{BailErrorStrategy, ANTLRInputStream, CommonTokenStream}')
+		testWriter.println('')
+		testWriter.println('class SoakTest extends TestCase with TSoakTests {')
+		testWriter.println('	def parser(sourceFile: String) = {')
+		testWriter.println('		val tokenStream = new CommonTokenStream(')
+		testWriter.println('			new JimpLexer({')
+		testWriter.println('				val stream: ANTLRInputStream = new ANTLRInputStream(getClass.getResourceAsStream(sourceFile))')
+		testWriter.println('				stream.name = sourceFile')
+		testWriter.println('				stream')
+		testWriter.println('			})')
+		testWriter.println('		)')
+		testWriter.println('		val parser =')
+		testWriter.println('			new JimpParser(')
+		testWriter.println('				tokenStream')
+		testWriter.println('			)')
+		testWriter.println('		parser.setErrorHandler(new BailErrorStrategy())')
+		testWriter.println('		parser')
+		testWriter.println('	}')
+		testWriter.println('	override def apply(sourceName: String): Unit = {')
+		testWriter.println('		Syntax(')
+		testWriter.println('			parser(sourceName).module()')
+		testWriter.println('		)')
+		testWriter.println('	}')
+		testWriter.println('}')
+
+		testWriter.close()
+
+	}
+}
+compileTestScala.mustRunAfter soak
+sourceSets.test.scala.srcDirs += soak.generatedScala
+sourceSets.test.resources.srcDirs += soak.generatedResources
+
+
+task generateAntlr4(type: Antlr4Task)
+sourceSets.main.java.srcDirs += generateAntlr4.generatedDir
+compileJava.dependsOn(generateAntlr4)
+
+dependencies {
+	compile 'org.antlr:antlr4-runtime:4.5'
+}
+
+buildscript {
+	repositories {
+		// Samon uses stuff in central
+		mavenCentral()
+		mavenLocal()
+
+		// Samon will be here
+		maven {
+			name "Peter's Stuff"
+			url 'https://dl.dropboxusercontent.com/u/15094498/repo/snap'
+		}
+	}
+
+	// Samon needs to be added as a dependency
+	dependencies {
+		classpath 'com.peterlavalle.samon:buildSrc:0.0.0.2'
+		classpath gradleApi()
+		classpath localGroovy()
+		classpath 'org.antlr:antlr4-runtime:4.5'
+		classpath 'org.antlr:antlr4:4.5'
+	}
+}
+
+
+class Antlr4Task extends org.gradle.api.DefaultTask {
+
+	@org.gradle.api.tasks.InputDirectory
+	def File grammarDir
+
+	@org.gradle.api.tasks.OutputDirectory
+	def File generatedDir
+
+	Antlr4Task() {
+		description = 'Translates Antlr4 .g4 grammars into .java sources'
+		group = 'Source Code Generation'
+
+		grammarDir = project.file('src/antlr4')
+		generatedDir = new File(project.buildDir, 'generated/antlr4-sources')
+
+		project.compileJava.dependsOn(this)
+		project.sourceCompatibility = 1.7
+
+	}
+
+	@org.gradle.api.tasks.TaskAction
+	def generate() {
+		assert (generatedDir.exists() || generatedDir.mkdirs())
+		project.sourceSets.main.java.srcDirs += generatedDir
+
+		project.fileTree(dir: grammarDir, include: ['**/*.g4']).files.sort().each {
+			it ->
+				def relative =
+						it.absolutePath
+								.substring(grammarDir.absolutePath.length() + 1, it.absolutePath.length() - 3)
+								.replace('\\', '/')
+
+				def pakcage = relative.substring(0, relative.lastIndexOf('/')).replace('/', '.')
+
+				println("grammar ; $relative")
+				new org.antlr.v4.Tool([
+						"-o", new File(generatedDir, pakcage.replace('.', '/')).absolutePath,
+						"-package", pakcage,
+						"-no-listener",
+						"-no-visitor",
+						it.absolutePath
+				] as String[]).processGrammarsOnCommandLine()
+		}
+		println('grammars all processed')
+	}
+}
