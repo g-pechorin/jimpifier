@@ -1,9 +1,11 @@
 package peterlavalle.jimpifier.gardener
 
 import peterlavalle.jimpifier.ast._
-import peterlavalle.jimpifier.ast.rva.InvokeSpecial
-import peterlavalle.jimpifier.ast.ssa.{Return, Assign}
-import peterlavalle.jimpifier.ast.tra.{TRValue, TLValue, TSSA}
+import peterlavalle.jimpifier.ast.lva.{Accessor, Global, Indexor}
+import peterlavalle.jimpifier.ast.rva._
+import peterlavalle.jimpifier.ast.ssa.Branch.GoTo
+import peterlavalle.jimpifier.ast.ssa._
+import peterlavalle.jimpifier.ast.tra.{TLValue, TRValue, TSSA}
 
 /**
  * Trait which can be extended to manipulate pieces of AST
@@ -74,6 +76,15 @@ trait TGardener {
 
 			case null => null
 
+			case _: Global =>
+				lv
+
+			case Accessor(obj, field) =>
+				Accessor(lvalue(module, method, block, ssa, obj), field)
+
+			case Indexor(arr, index) =>
+				Indexor(lvalue(module, method, block, ssa, arr), rvalue(module, method, block, ssa, index))
+
 			case register: Register => apply(module, method, register)
 
 			case missing =>
@@ -86,12 +97,66 @@ trait TGardener {
 			case null =>
 				// doesn't make as much sense as a null lvalue ... which is ironic
 				null
+			case _: AllocateObject |
+			     _: Literal.TLiteral =>
+				rv
 
-			case lv: TLValue => lvalue(module, method, block, ssa, lv)
-			case Literal.This => Literal.This
+			case CastValue(tType, value) =>
+				CastValue(tType, rvalue(module, method, block, ssa, value))
+
+			case EnumValue(tType, value) =>
+				EnumValue(tType, rvalue(module, method, block, ssa, value))
+
+
+			case Indexor(l, r) =>
+				Indexor(lvalue(module, method, block, ssa, l), rvalue(module, method, block, ssa, r))
+
+			case InfixOperations.InfixAdd(l, r) =>
+				InfixOperations.InfixAdd(rvalue(module, method, block, ssa, l), rvalue(module, method, block, ssa, r))
+
+			case InfixOperations.InfixBitRight(l, r) =>
+				InfixOperations.InfixBitRight(rvalue(module, method, block, ssa, l), rvalue(module, method, block, ssa, r))
+
+			case InfixOperations.InfixCMP(l, r) =>
+				InfixOperations.InfixCMP(rvalue(module, method, block, ssa, l), rvalue(module, method, block, ssa, r))
+
+			case InfixOperations.InfixCMPG(l, r) =>
+				InfixOperations.InfixCMPG(rvalue(module, method, block, ssa, l), rvalue(module, method, block, ssa, r))
+
+			case InfixOperations.InfixCMPL(l, r) =>
+				InfixOperations.InfixCMPL(rvalue(module, method, block, ssa, l), rvalue(module, method, block, ssa, r))
+
+			case InfixOperations.InfixDivide(l, r) =>
+				InfixOperations.InfixDivide(rvalue(module, method, block, ssa, l), rvalue(module, method, block, ssa, r))
+
+			case InfixOperations.InfixModulus(l, r) =>
+				InfixOperations.InfixModulus(rvalue(module, method, block, ssa, l), rvalue(module, method, block, ssa, r))
+
+			case InfixOperations.InfixMultiply(l, r) =>
+				InfixOperations.InfixMultiply(rvalue(module, method, block, ssa, l), rvalue(module, method, block, ssa, r))
+
+			case InfixOperations.InfixSubtract(l, r) =>
+				InfixOperations.InfixSubtract(rvalue(module, method, block, ssa, l), rvalue(module, method, block, ssa, r))
+
+			case InvokeGlobal(tType, name, args) =>
+				InvokeGlobal(tType, name, args.map(rvalue(module, method, block, ssa, _)))
+
+			case InvokeMethod(obj, name, args) =>
+				InvokeMethod(rvalue(module, method, block, ssa, obj), name, args.map(rvalue(module, method, block, ssa, _)))
 
 			case InvokeSpecial(register, name, args) =>
 				InvokeSpecial(apply(module, method, register), name, args.map(rvalue(module, method, block, ssa, _)))
+
+			case LengthOf(arr) =>
+				LengthOf(rvalue(module, method, block, ssa, arr))
+
+			case NegateValue(arr) =>
+				NegateValue(rvalue(module, method, block, ssa, arr))
+
+			case NewArray(tType, size) =>
+				NewArray(tType, rvalue(module, method, block, ssa, size))
+
+			case lv: TLValue => lvalue(module, method, block, ssa, lv)
 
 			case missing =>
 				sys.error("Peter missed the rvalue " + missing)
@@ -99,12 +164,44 @@ trait TGardener {
 
 	def instruction(module: Module, method: Method, block: Block, ssa: TSSA): TSSA =
 		ssa match {
+			case _: GoTo =>
+				ssa
+
 			case Assign(lv, rv) =>
 				Assign(lvalue(module, method, block, ssa, lv), rvalue(module, method, block, ssa, rv))
 
-			case Return(rv) =>
-				Return(rvalue(module, method, block, ssa, rv))
+			case Branch.GreaterEqual(l, r, label) =>
+				Branch.GreaterEqual(rvalue(module, method, block, ssa, l), rvalue(module, method, block, ssa, r), label)
 
+			case Branch.GreaterThan(l, r, label) =>
+				Branch.GreaterThan(rvalue(module, method, block, ssa, l), rvalue(module, method, block, ssa, r), label)
+
+			case Branch.IsEqual(l, r, label) =>
+				Branch.IsEqual(rvalue(module, method, block, ssa, l), rvalue(module, method, block, ssa, r), label)
+
+			case Branch.LessEqual(l, r, label) =>
+				Branch.LessEqual(rvalue(module, method, block, ssa, l), rvalue(module, method, block, ssa, r), label)
+
+			case Branch.LessThan(l, r, label) =>
+				Branch.LessThan(rvalue(module, method, block, ssa, l), rvalue(module, method, block, ssa, r), label)
+
+			case Branch.NotEqual(l, r, label) =>
+				Branch.NotEqual(rvalue(module, method, block, ssa, l), rvalue(module, method, block, ssa, r), label)
+
+			case Branch.Switch(value, branches) =>
+				Branch.Switch(rvalue(module, method, block, ssa, value), branches)
+
+			case Monitors.Enter(value) =>
+				Monitors.Enter(rvalue(module, method, block, ssa, value))
+
+			case Monitors.Exit(value) =>
+				Monitors.Exit(rvalue(module, method, block, ssa, value))
+
+			case Raise(value) =>
+				Raise(rvalue(module, method, block, ssa, value))
+
+			case Return(value) =>
+				Return(rvalue(module, method, block, ssa, value))
 
 			case missing =>
 				sys.error("Peter missed the instruction " + missing)

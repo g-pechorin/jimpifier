@@ -232,17 +232,17 @@ object Syntax {
 				lazy val List(l: TRValue, r: TRValue) = jump.rvalue().map(rvalue).toList
 				if (jump.COMPARE() != null)
 					jump.COMPARE().getText match {
-						case "!=" => ConditionalBranch.NotEqual(l, r, jump.DUMBNAME().getText)
-						case "==" => ConditionalBranch.IsEqual(l, r, jump.DUMBNAME().getText)
-						case ">=" => ConditionalBranch.GreaterEqual(l, r, jump.DUMBNAME().getText)
-						case ">" => ConditionalBranch.GreaterThan(l, r, jump.DUMBNAME().getText)
-						case "<=" => ConditionalBranch.LessEqual(l, r, jump.DUMBNAME().getText)
-						case "<" => ConditionalBranch.LessThan(l, r, jump.DUMBNAME().getText)
+						case "!=" => Branch.NotEqual(l, r, jump.DUMBNAME().getText)
+						case "==" => Branch.IsEqual(l, r, jump.DUMBNAME().getText)
+						case ">=" => Branch.GreaterEqual(l, r, jump.DUMBNAME().getText)
+						case ">" => Branch.GreaterThan(l, r, jump.DUMBNAME().getText)
+						case "<=" => Branch.LessEqual(l, r, jump.DUMBNAME().getText)
+						case "<" => Branch.LessThan(l, r, jump.DUMBNAME().getText)
 						case wat =>
 							sys.error("COMPARE(" + wat + ")")
 					}
 				else
-					ConditionalBranch.GoTo(jump.DUMBNAME().getText)
+					Branch.GoTo(jump.DUMBNAME().getText)
 
 			case monitor: MonitorContext =>
 				monitor.K_monitor().getText match {
@@ -268,13 +268,13 @@ object Syntax {
 				Return(if (null != resurn.rvalue()) rvalue(resurn.rvalue()) else null)
 
 			case switch: SwitchContext =>
-				Switch.Statement(
+				Branch.Switch(
 					rvalue(switch.rvalue()),
 					switch.lookup_case().map {
 						case dcase: DcaseContext =>
-							Switch.Default(dcase.DUMBNAME().getText)
+							Branch.Default(dcase.DUMBNAME().getText)
 						case ccase: CcaseContext =>
-							Switch.Case(ccase.INTEGER().getText.toInt, ccase.DUMBNAME().getText)
+							Branch.Case(ccase.INTEGER().getText.toInt, ccase.DUMBNAME().getText)
 					}.toList
 				)
 
