@@ -1,7 +1,6 @@
 This is a WIP that should yield a sneaky toolchain to inject code into .apk files by rewriting them AoT.
 The intent is to intercept OpenGL ES calls and do "other" noble-good things that the original authors hadn't considered.
 
-Read "Tu Use" when you want to setup.
 
 # Tu Use
 
@@ -42,7 +41,8 @@ These instructions are detailed - not hard or long.
 		* ... and they do nothing useful AFAICT
 1. When that's done - right click on the `build/` folders and select "Mark Directory As > Cancel Exclusion"
 	* You'll have to do this everytime you "Refresh All Gradle projects"
-	* ... if you don't do it - IDEA can't se generated code
+		* ... which should only be when modules are shuffled around
+	* ... if you don't do it - IDEA can't see the generated code
 1. You're done it - the project is ready to play
 	* Watch those syntax errors trickle out of the .scala files!
 
