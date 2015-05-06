@@ -2,6 +2,7 @@ This is a WIP that should yield a sneaky toolchain to inject code into .apk file
 The intent is to intercept OpenGL ES calls and do "other" noble-good things that the original authors hadn't considered.
 
 * [compiler/](compiler/) reads `.jimp` into a sort of [AST](http://en.wikipedia.org/wiki/Abstract_syntax_tree). Maybe it's [IR](http://en.wikipedia.org/wiki/Intermediate_language#Intermediate_representation). Technically - it's probably going to be IR even if it lacks the finer details that usual characterize IR
+* [cook/](cook/) writes out piles of source files
 * [jump/](jump/) contains a trait which uses [Soot](http://sable.github.io/soot/) to generate `.jimp` files. It also has demonstrations of this trait.
 * [gardener/](gardener/) contains a trait which can be extended to consume an AST and emits a new improved version of the AST. As it stands - the provided trait performs a deep copy to allow minimal overriding.
 
