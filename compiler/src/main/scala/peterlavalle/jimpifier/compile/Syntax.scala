@@ -35,13 +35,14 @@ object Syntax {
 				case "protected" => Visibility.Protected
 			}
 
+
 	def apply(module: ModuleContext): Module = {
 		Module(
 			isFinal = null != module.K_final(),
 			isEnum = null != module.K_enum(),
 			visibility = Syntax(module.K_visibility()),
-			name = module.classname(0).getText,
-			tType = module.classname(1).getText,
+			name = apply(module.classname(0)),
+			tType = apply(module.classname(1)),
 			fields = module.field().map(apply).toList,
 			methods = module.method().map(apply).toList
 		)
@@ -65,7 +66,7 @@ object Syntax {
 		)
 
 	def apply(classname: ClassnameContext): String =
-		classname.getText
+		classname.getText.replace('.', '/')
 
 	def apply(typename: TypenameContext): String =
 		typename.BRACK_CLOSE().foldLeft(Syntax(typename.classname()))((l, r) => l + "[]")
@@ -256,7 +257,7 @@ object Syntax {
 				Assign(
 					lvalue(newarray.lvalue()),
 					NewArray(
-						newarray.typename().getText,
+						apply(newarray.typename()),
 						rvalue(newarray.rvalue())
 					)
 				)

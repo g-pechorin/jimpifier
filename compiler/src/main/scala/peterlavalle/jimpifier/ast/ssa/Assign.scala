@@ -5,8 +5,8 @@ import peterlavalle.jimpifier.ast.tra.{TLValue, TRValue, TSSA}
 
 case class Assign(result: TLValue, value: TRValue) extends TSSA {
 	value match {
-		case NewArray(tType, _) =>
-			require(result.tType == (tType + "[]"))
+		case NewArray(eType, _) =>
+			require(result.tType == (eType + "[]"), "Result type of `%s` is not correct fo eType `%s`".format(result.tType, eType))
 		case _ =>
 			;
 	}

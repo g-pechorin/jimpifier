@@ -25,8 +25,8 @@ class com_glTron_Video_GraphicUtils$vec2_test extends AJimpTest("com.glTron.Vide
 	}
 
 	def testLineSyntax(): Unit = {
-		val r0 = Register("$r0", "com.glTron.Video.GraphicUtils$vec2")
-		val r1 = Register("$r1", "com.glTron.Video.GraphicUtils")
+		val r0 = Register("$r0", "com/glTron/Video/GraphicUtils$vec2")
+		val r1 = Register("$r1", "com/glTron/Video/GraphicUtils")
 
 		val expect = Assign(Accessor(r0, "this$0"), r1)
 		val actual = Syntax(List(r0, r1), parseLine())
@@ -78,23 +78,23 @@ class com_glTron_Video_GraphicUtils$vec2_test extends AJimpTest("com.glTron.Vide
 				visibility = Public,
 				isStatic = false,
 				name = "<init>",
-				args = List("com.glTron.Video.GraphicUtils"),
+				args = List("com/glTron/Video/GraphicUtils"),
 				tType = "void",
 				registers = List(
-					Register("$r0", "com.glTron.Video.GraphicUtils$vec2"),
-					Register("$r1", "com.glTron.Video.GraphicUtils"),
+					Register("$r0", "com/glTron/Video/GraphicUtils$vec2"),
+					Register("$r1", "com/glTron/Video/GraphicUtils"),
 					Register("$r2", "float[]")
 				),
 				blocks = List(
 					Block(
 						null,
 						List(
-							Assign(Register("$r0", "com.glTron.Video.GraphicUtils$vec2"), This),
-							Assign(Register("$r1", "com.glTron.Video.GraphicUtils"), Literal.Parameter(0)),
-							Assign(Accessor(Register("$r0", "com.glTron.Video.GraphicUtils$vec2"), "this$0"), Register("$r1", "com.glTron.Video.GraphicUtils")),
-							Assign(null, InvokeSpecial(Register("$r0", "com.glTron.Video.GraphicUtils$vec2"), "<init>", List())),
+							Assign(Register("$r0", "com/glTron/Video/GraphicUtils$vec2"), This),
+							Assign(Register("$r1", "com/glTron/Video/GraphicUtils"), Literal.Parameter(0)),
+							Assign(Accessor(Register("$r0", "com/glTron/Video/GraphicUtils$vec2"), "this$0"), Register("$r1", "com/glTron/Video/GraphicUtils")),
+							Assign(null, InvokeSpecial(Register("$r0", "com/glTron/Video/GraphicUtils$vec2"), "<init>", List())),
 							Assign(Register("$r2", "float[]"), NewArray("float", Literal.LiteralInt(2))),
-							Assign(Accessor(Register("$r0", "com.glTron.Video.GraphicUtils$vec2"), "v"), Register("$r2", "float[]")),
+							Assign(Accessor(Register("$r0", "com/glTron/Video/GraphicUtils$vec2"), "v"), Register("$r2", "float[]")),
 							Return(null)
 						)
 					)
@@ -189,13 +189,13 @@ class R_test extends AJimpTest("com.glTron.R.jimp") {
 				args = List(),
 				tType = "void",
 				List(
-					Register("$r0", "com.glTron.R")
+					Register("$r0", "com/glTron/R")
 				),
 				List(
 					Block(null,
 						List(
-							Assign(Register("$r0", "com.glTron.R"), Literal.This),
-							Assign(null, InvokeSpecial(Register("$r0", "com.glTron.R"), "<init>", List())),
+							Assign(Register("$r0", "com/glTron/R"), Literal.This),
+							Assign(null, InvokeSpecial(Register("$r0", "com/glTron/R"), "<init>", List())),
 							Return(null)
 						)
 					)
