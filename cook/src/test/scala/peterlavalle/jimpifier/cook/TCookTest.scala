@@ -1,12 +1,11 @@
 package peterlavalle.jimpifier.cook
 
-import java.io.{Writer, StringWriter}
+import java.io.{StringWriter, Writer}
 
 import jimp.TJimpTests
-import junit.framework.TestCase
 import junit.framework.Assert._
+import junit.framework.TestCase
 import org.easymock.EasyMock
-import peterlavalle.jimpifier.ast.Module
 import peterlavalle.jimpifier.compile.{Syntax, TAntlr4Parser}
 
 import scala.io.Source
