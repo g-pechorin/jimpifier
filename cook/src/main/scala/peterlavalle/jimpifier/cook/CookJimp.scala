@@ -2,12 +2,10 @@ package peterlavalle.jimpifier.cook
 
 import java.io.Writer
 
-import peterlavalle.jimpifier.ast.Literal.LiteralInt
-import peterlavalle.jimpifier.ast.Visibility.TVisibility
 import peterlavalle.jimpifier.ast._
 import peterlavalle.jimpifier.ast.lva.Accessor
-import peterlavalle.jimpifier.ast.rva.{NewArray, InvokeSpecial}
-import peterlavalle.jimpifier.ast.ssa.{Return, Assign}
+import peterlavalle.jimpifier.ast.rva.{InvokeSpecial, NewArray}
+import peterlavalle.jimpifier.ast.ssa.{Assign, Return}
 import peterlavalle.jimpifier.ast.tra._
 
 case object CookJimp extends TCook {
