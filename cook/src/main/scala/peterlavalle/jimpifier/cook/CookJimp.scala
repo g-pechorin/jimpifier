@@ -2,18 +2,30 @@ package peterlavalle.jimpifier.cook
 
 import java.io.Writer
 
+import peterlavalle.jimpifier.ast.Literal.LiteralInt
 import peterlavalle.jimpifier.ast.Visibility.TVisibility
 import peterlavalle.jimpifier.ast._
-import peterlavalle.jimpifier.ast.rva.InvokeSpecial
+import peterlavalle.jimpifier.ast.lva.Accessor
+import peterlavalle.jimpifier.ast.rva.{NewArray, InvokeSpecial}
 import peterlavalle.jimpifier.ast.ssa.{Return, Assign}
 import peterlavalle.jimpifier.ast.tra._
 
 case object CookJimp extends TCook {
 
-	def apply(writer: Writer, field: Field): Unit = ???
+	def apply(field: Field): String =
+		"%s%s%s%s %s"
+			.format(
+		    if (null != field.visibility) field.visibility.toString.toLowerCase + " " else "",
+		    if (field.isStatic) "static " else "",
+		    if (field.isFinal) "final " else "",
+		    tTypeString(field.tType),
+		    field.name
+			)
 
 	def lvalue(lv: TLValue): String =
 		lv match {
+			case Accessor(obj, atr) =>
+				lvalue(obj) + "." + atr
 			case Register(name, _) =>
 				name
 			case wat =>
@@ -30,6 +42,12 @@ case object CookJimp extends TCook {
 				    args.map(rvalue).foldLeft("")(_ + ", " + _).replaceAll("^, ", "")
 					)
 
+			case Literal.LiteralInt(i) =>
+				i.toString
+
+			case NewArray(eType, size) =>
+				"newarray (" + tTypeString(eType) + ")[" + rvalue(size) + "]"
+
 			case lv: TLValue =>
 				lvalue(lv)
 			case wat =>
@@ -43,10 +61,14 @@ case object CookJimp extends TCook {
 		    ssa match {
 			    case Assign(null, rv) =>
 				    rvalue(rv)
-			    case Assign(lv, Literal.This) =>
-				    lvalue(lv) + " := @this"
+			    case Assign(lv, special: Literal.TSpecial) =>
+				    lvalue(lv) + " := @" + special.toString.replaceAll("\\W+", "").toLowerCase
+			    case Assign(lv, rv) =>
+				    lvalue(lv) + " = " + rvalue(rv)
 			    case Return(null) =>
 				    "return"
+			    case Return(rv) =>
+				    "return " + rvalue(rv)
 			    case wat =>
 				    sys.error("Peter missed SSA ; " + wat)
 		    }
@@ -67,29 +89,28 @@ case object CookJimp extends TCook {
 	def apply(writer: Writer, method: Method): Unit =
 		method match {
 			case Method(visibility, isStatic, name, args, tType, registers, blocks, handlers) =>
-				if (isStatic) ???
-
 				writer
 					.append(
-				    "\n    %s%s %s(%s)\n"
+				    "\n    %s%s%s %s(%s)\n"
 					    .format(
 				        if (null != visibility) visibility.toString.toLowerCase + " " else "",
+				        if (isStatic) "static " else "",
 				        tType,
 				        name,
-				        args.map(a => ???.toString).foldLeft("")(_ + ", " + _).replaceAll("^, ", "")
+				        args.map(tTypeString).foldLeft("")(_ + ", " + _).replaceAll("^, ", "")
 					    )
 					)
 					.append(
-				    "    {"
+				    "    {\n"
 					)
 
-				// TODO : kniot groups of registers together :(
+				// TODO : knit groups of registers together :(
 				registers
 					.foreach {
 					case Register(rName, rType) =>
 						writer
 							.append(
-						    "\n        %s %s;\n"
+						    "        %s %s;\n"
 							    .format(
 						        tTypeString(rType),
 						        rName
@@ -128,7 +149,10 @@ case object CookJimp extends TCook {
 					    "{\n"
 						)
 
-				fields.foreach(apply(writer, _))
+				fields.map(apply).foreach {
+					case text =>
+						writer.append("    " + text + ";\n")
+				}
 
 				methods.foreach(apply(writer, _))
 

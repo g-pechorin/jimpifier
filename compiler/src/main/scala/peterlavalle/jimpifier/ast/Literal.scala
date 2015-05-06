@@ -7,6 +7,8 @@ case object Literal {
 
 	sealed trait TLiteral extends TRValue
 
+	sealed trait TSpecial extends TLiteral
+
 	case class LiteralInt(i: Int) extends TLiteral {
 		override val tType: String = "int"
 	}
@@ -31,7 +33,7 @@ case object Literal {
 		override val tType: String = "java.lang.Class"
 	}
 
-	case object This extends TLiteral {
+	case object This extends TSpecial {
 		override lazy val tType: String = ???
 	}
 
@@ -39,11 +41,11 @@ case object Literal {
 		override lazy val tType: String = ???
 	}
 
-	case object CaughtException extends TLiteral {
+	case object CaughtException extends TSpecial {
 		override lazy val tType: String = ???
 	}
 
-	case class Parameter(i: Int) extends TLiteral {
+	case class Parameter(i: Int) extends TSpecial {
 		override lazy val tType: String = ???
 	}
 
