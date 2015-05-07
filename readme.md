@@ -5,6 +5,7 @@ The intent is to intercept OpenGL ES calls and do "other" noble-good things that
 * [cook/](cook/) writes out piles of source files
 * [jump/](jump/) contains a trait which uses [Soot](http://sable.github.io/soot/) to generate `.jimp` files. It also has demonstrations of this trait.
 * [gardener/](gardener/) contains a trait which can be extended to consume an AST and emits a new improved version of the AST. As it stands - the provided trait performs a deep copy to allow minimal overriding.
+* [sable/](sable/) a compiler for `.jimple` from Soot's nighties
 
 See [by hand](by-hand/) for instructions on how I oringinally generated `.jimp` files.
 
@@ -22,7 +23,7 @@ These instructions are detailed - not hard or long.
 		* YOU DON'T NEED TO INSTALL GRADLE
 			* ... ever IMO
 	* You need JetBrain's Scala plugin 1.4.15 (or maybe later ... not sure)
-	* You want the not-Jetbrains `ANTLR v4 Grammar Plugin ` 1.6 (or maybe later ... not sure)
+	* You may want the not-Jetbrains `ANTLR v4 Grammar Plugin ` 1.6 (or maybe later ... not sure)
 		* NOT V3!
 		* this doesn't actually do anything until you start changing the `.g4` files
 		* If you don't know why you need it - you probably should get it

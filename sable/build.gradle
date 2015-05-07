@@ -1,0 +1,79 @@
+description = """
+Reads .jimple files to produce jimpifier.ast
+"""
+
+
+buildscript {
+	repositories {
+		mavenCentral()
+		mavenLocal()
+	}
+	dependencies {
+		classpath 'org.anarres.gradle:gradle-sablecc-plugin:1.0.4'
+
+	}
+}
+
+task('generateJimple') {
+
+	ext.apk = project.parent.file('by-hand/app-release-unsigned.apk')
+
+	ext.generatedSources = project.file('build/generated/jimple-sources')
+	ext.generatedResources = project.file('build/generated/jimple-resources')
+
+	inputs.file apk
+
+	outputs.dir generatedSources
+	outputs.dir generatedResources
+
+	doLast {
+		def baseJumpDown = new jimpifier.jump.BaseJumpDown()
+
+		baseJumpDown._mode = 'J'
+		baseJumpDown._soot = project.parent.file('by-hand/soot-trunk.2015-05-04.jar')
+		baseJumpDown._android = new File(System.getProperty('user.home'), 'AppData/Local/Android/sdk/platforms')
+
+		baseJumpDown.apply(apk, new File((File) generatedResources, 'jimple'))
+
+		def jimpleFile = new File((File) generatedSources, 'jimple/TJimpleTest.scala')
+		assert (jimpleFile.parentFile.exists() || jimpleFile.parentFile.mkdirs())
+		def jimpleWriter = new FileWriter(jimpleFile)
+
+		jimpleWriter.append('package jimple\n')
+		jimpleWriter.append('\n')
+		jimpleWriter.append('trait TJimpleTest {')
+		jimpleWriter.append('\n')
+		jimpleWriter.append('\tdef apply(sourceName: String)\n')
+		jimpleWriter.append('\n')
+
+		new File((File) generatedResources, 'jimple').list().each { file ->
+			jimpleWriter.append('\tdef test_' + file.replaceAll('\\.jimple$', '').replaceAll('\\W', '_') + '() {\n')
+			jimpleWriter.append('\t\tapply("' + file + '")\n')
+			jimpleWriter.append('\t}\n')
+		}
+
+		jimpleWriter.append('}\n')
+		jimpleWriter.close()
+	}
+}
+sourceSets.test.scala.srcDirs += generateJimple.generatedSources
+sourceSets.test.resources.srcDirs += generateJimple.generatedResources
+compileTestScala.dependsOn(generateJimple)
+
+apply plugin: 'sablecc'
+
+sablecc {
+	inputDir = "src/sablecc"
+	outputDir = "build/generated/sablecc-sources"
+}
+
+sourceSets.main.java.srcDirs += sablecc.outputDir
+sourceSets.main.resources.srcDirs += sablecc.outputDir
+
+dependencies {
+	compile 'com.google.code.findbugs:jsr305:1.3.9'
+
+
+	compile project(':compiler') // should be ast
+
+}

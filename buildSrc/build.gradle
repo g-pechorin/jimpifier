@@ -1,0 +1,22 @@
+description = """
+This provides a potential tool to dump .apk files into .jimp sources
+"""
+
+apply plugin: 'scala'
+apply plugin: 'java'
+
+group = 'peterlavalle.jimpifier'
+
+repositories {
+	mavenCentral()
+	mavenLocal()
+}
+
+dependencies {
+	compile 'org.scala-lang:scala-reflect:2.11.6'
+	compile 'org.scala-lang:scala-library:2.11.6'
+	testCompile 'junit:junit:4.6'
+}
+
+compileScala.dependsOn.remove('compileJava')
+compileJava.dependsOn('compileScala')
