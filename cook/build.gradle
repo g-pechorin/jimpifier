@@ -1,0 +1,10 @@
+description = """
+This module contains classes to `cook` jimpifier.ast into some sort of output
+"""
+
+dependencies {
+	compile project(':compiler') // should be ast
+	testCompile project(':compiler').sourceSets.test.output // good as-is
+
+	testCompile 'org.easymock:easymock:3.3.1'
+}

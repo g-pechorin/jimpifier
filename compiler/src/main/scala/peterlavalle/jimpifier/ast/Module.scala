@@ -8,10 +8,11 @@ case class Module(
 	                 isFinal: Boolean,
 	                 isEnum: Boolean,
 	                 name: String,
-	                 tType: String,
+	                 parent: String,
+	                 interfaces: List[String],
 	                 fields: List[Field],
 	                 methods: List[Method])
-	extends TVisible with TNamed with TFinal with TTyped {
+	extends TVisible with TNamed with TFinal {
 
-	def parent = tType
+	
 }

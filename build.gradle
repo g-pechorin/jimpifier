@@ -4,6 +4,7 @@ allprojects {
 	apply plugin: 'scala'
 	apply plugin: 'java'
 
+	group = 'peterlavalle.jimpifier'
 
 	repositories {
 		mavenCentral()

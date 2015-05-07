@@ -35,13 +35,15 @@ object Syntax {
 				case "protected" => Visibility.Protected
 			}
 
+
 	def apply(module: ModuleContext): Module = {
 		Module(
 			isFinal = null != module.K_final(),
 			isEnum = null != module.K_enum(),
 			visibility = Syntax(module.K_visibility()),
-			name = module.classname(0).getText,
-			tType = module.classname(1).getText,
+			name = apply(module.classname(0)),
+			parent = apply(module.classname(1)),
+			interfaces = module.classname().drop(2).map(apply).toList,
 			fields = module.field().map(apply).toList,
 			methods = module.method().map(apply).toList
 		)
@@ -52,6 +54,7 @@ object Syntax {
 			visibility = Syntax(field.K_visibility()),
 			isStatic = null != field.K_static(),
 			isFinal = null != field.K_final(),
+			isEnum = null != field.K_enum(),
 			name = field.DUMBNAME().getText,
 			tType = field.typename().getText)
 	}
@@ -65,7 +68,7 @@ object Syntax {
 		)
 
 	def apply(classname: ClassnameContext): String =
-		classname.getText
+		classname.getText.replace('.', '/')
 
 	def apply(typename: TypenameContext): String =
 		typename.BRACK_CLOSE().foldLeft(Syntax(typename.classname()))((l, r) => l + "[]")
@@ -108,7 +111,7 @@ object Syntax {
 
 			case enum: EnumValueOfContext =>
 				EnumValue(
-					enum.STRING().getText.substring(1).reverse.substring(1).reverse,
+					Literal.LiteralClass(enum.STRING().getText.substring(1).reverse.substring(1).reverse),
 					rv(lookup, enum.rvalue())
 				)
 
@@ -256,7 +259,7 @@ object Syntax {
 				Assign(
 					lvalue(newarray.lvalue()),
 					NewArray(
-						newarray.typename().getText,
+						apply(newarray.typename()),
 						rvalue(newarray.rvalue())
 					)
 				)

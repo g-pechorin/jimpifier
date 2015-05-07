@@ -6,29 +6,65 @@ import peterlavalle.jimpifier.ast.tra.TRValue
 object InfixOperations {
 
 	sealed trait TInfixOperation extends TRValue {
+		val l: TRValue
+		val r: TRValue
+
+		// HACK ; this really should be in the cook, not here in the model
+		val str: String
+
+
 		override lazy val tType: String = ???
 	}
 
-	case class InfixAdd(l: TRValue, r: TRValue) extends TInfixOperation
+	// ... but then we couldn't do this!
+	def unapply(rv: TRValue) =
+		rv match {
+			case infix: TInfixOperation =>
+				Option((infix.l, infix.str, infix.r))
+			case _ => None
+		}
 
-	case class InfixCMP(l: TRValue, r: TRValue) extends TInfixOperation
+	case class InfixAdd(l: TRValue, r: TRValue) extends TInfixOperation {
+		val str = "+"
+	}
 
-	case class InfixCMPG(l: TRValue, r: TRValue) extends TInfixOperation
+	case class InfixCMP(l: TRValue, r: TRValue) extends TInfixOperation {
+		val str = "cmp"
+	}
 
-	case class InfixCMPL(l: TRValue, r: TRValue) extends TInfixOperation
+	case class InfixCMPG(l: TRValue, r: TRValue) extends TInfixOperation {
+		val str = "cmpg"
+	}
 
-	case class InfixDivide(l: TRValue, r: TRValue) extends TInfixOperation
+	case class InfixCMPL(l: TRValue, r: TRValue) extends TInfixOperation {
+		val str = "cmpl"
+	}
 
-	case class InfixModulus(l: TRValue, r: TRValue) extends TInfixOperation
+	case class InfixDivide(l: TRValue, r: TRValue) extends TInfixOperation {
+		val str = "/"
+	}
 
-	case class InfixMultiply(l: TRValue, r: TRValue) extends TInfixOperation
+	case class InfixModulus(l: TRValue, r: TRValue) extends TInfixOperation {
+		val str = "%"
+	}
 
-	case class InfixSubtract(l: TRValue, r: TRValue) extends TInfixOperation
+	case class InfixMultiply(l: TRValue, r: TRValue) extends TInfixOperation {
+		val str = "*"
+	}
 
-	case class InfixBitRight(l: TRValue, r: TRValue) extends TInfixOperation
+	case class InfixSubtract(l: TRValue, r: TRValue) extends TInfixOperation {
+		val str = "-"
+	}
 
-	case class InfixBitLeft(l: TRValue, r: TRValue) extends TInfixOperation
+	case class InfixBitRight(l: TRValue, r: TRValue) extends TInfixOperation {
+		val str = ">>"
+	}
 
+	case class InfixBitLeft(l: TRValue, r: TRValue) extends TInfixOperation {
+		val str = "<<"
+	}
+
+	// TODO : HACK ; this really should be in the compiler, not here in the model
 	def apply(l: TRValue, o: TerminalNode, r: TRValue) =
 		(o.getText match {
 			case "+" => InfixAdd

@@ -31,9 +31,7 @@ They seem a bit excessive - but they're there if you want them.
 
 This tool will probably fall-over for a whole bunch of reasons.
 
-* line numbers and local variable tables aren't used ... I wish they were
-* doesn't use consistent type names.
-	* I'd like `foo/bar$Something` but I'm sure it's using `foo.bar$Something` somewhere and wouldn't be surprised to see `foo.bar.Something`
+* line numbers and local variable tables aren't used ... I wish they were here
 * probably can't handle `native`, `interface` or `abstract` methods and classes
 * `jimpifier.ast` and `jimpifier.compiler` should be in separate modules
 	* ... but I know that there's CST -> AST logic in `jimpifier.ast` which shouldn't be there
