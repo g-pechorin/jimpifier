@@ -3,10 +3,11 @@ package peterlavalle.jimpifier.cook
 import java.io.Writer
 
 import peterlavalle.jimpifier.ast._
-import peterlavalle.jimpifier.ast.lva.{Global, Indexor, Accessor}
+import peterlavalle.jimpifier.ast.lva.{Accessor, Global, Indexor}
 import peterlavalle.jimpifier.ast.rva._
 import peterlavalle.jimpifier.ast.ssa._
 import peterlavalle.jimpifier.ast.tra._
+import peterlavalle.jimpifier.ast.typ.{ArrayOf, ClassType, Primitive, TType}
 
 case object CookJimp extends TCook {
 
@@ -28,7 +29,7 @@ case object CookJimp extends TCook {
 			case Global(container, name) =>
 				container.foldRight(name)(_ + "." + _)
 			case Indexor(arr, idx) =>
-				require(arr.tType.endsWith("[]"))
+				require(arr.tType.isInstanceOf[ArrayOf])
 				"%s[%s]".format(lvalue(arr), rvalue(idx))
 			case Register(name, _) =>
 				name
@@ -112,8 +113,8 @@ case object CookJimp extends TCook {
 			case NegateValue(value) =>
 				"neg " + rvalue(value)
 
-			case NewArray(eType, size) =>
-				"newarray (" + tTypeString(eType) + ")[" + rvalue(size) + "]"
+			case NewArray(aType, size) =>
+				"newarray (" + tTypeString(aType.tType) + ")[" + rvalue(size) + "]"
 
 			case lv: TLValue =>
 				lvalue(lv)
@@ -129,6 +130,8 @@ case object CookJimp extends TCook {
 		    ssa match {
 			    case Assign(null, rv) =>
 				    rvalue(rv)
+			    case Assign(lv, Literal.Parameter(parameter, _)) =>
+				    lvalue(lv) + " := @parameter" + parameter
 			    case Assign(lv, special: Literal.TSpecial) =>
 				    lvalue(lv) + " := @" + special.toString.replaceAll("\\W+", "").toLowerCase
 			    case Assign(lv, rv) =>
@@ -169,8 +172,16 @@ case object CookJimp extends TCook {
 		block.ssa.foreach(apply(writer, _))
 	}
 
-	def tTypeString(tType: String): String =
-		tType.replaceAll("/", ".")
+	def tTypeString(tType: TType): String =
+		tType match {
+			case ArrayOf(aType) =>
+				tTypeString(aType) + "[]"
+			case ClassType(name) =>
+				name.replaceAll("/", ".")
+			case primitive: Primitive.TPrimitiveType =>
+				primitive.name
+		}
+
 
 	def apply(writer: Writer, method: Method): Unit =
 		method match {
@@ -181,7 +192,7 @@ case object CookJimp extends TCook {
 					    .format(
 				        if (null != visibility) visibility.toString.toLowerCase + " " else "",
 				        if (isStatic) "static " else "",
-				        tType,
+				        tTypeString(tType),
 				        name,
 				        argsString(args.map(tTypeString))
 					    )
@@ -192,9 +203,9 @@ case object CookJimp extends TCook {
 
 				// knit groups of registers together :)
 				if (registers.nonEmpty) {
-					def knit(registers: List[Register], yarn: List[(String, String)]): List[(String, String)] =
+					def knit(registers: List[Register], yarn: List[(TType, String)]): List[String] =
 						(registers, yarn) match {
-							case (Nil, _) => yarn.reverse
+							case (Nil, _) => yarn.reverseMap { case (t, n) => tTypeString(t) + " " + n }
 
 							case (Register(rName, rType) :: rTail, (yType, yText) :: yTail) if rType == yType =>
 								knit(rTail, (yType, yText + ", " + rName) :: yTail)
@@ -205,9 +216,9 @@ case object CookJimp extends TCook {
 
 					knit(registers, List())
 						.foldLeft(writer.append("\n")) {
-						case (w, (rType, rName)) =>
+						case (w, t) =>
 							w.append(
-								"        " + tTypeString(rType) + " " + rName + ";\n"
+								"        " + t + ";\n"
 							)
 					}
 				}
@@ -217,7 +228,7 @@ case object CookJimp extends TCook {
 				if (handlers.nonEmpty)
 					writer.append(
 						handlers.foldLeft("\n") {
-							case (left, Handler(hType: String, from: String, to: String, wit: String)) =>
+							case (left, Handler(hType, from: String, to: String, wit: String)) =>
 								left + "        catch %s from %s to %s with %s;\n"
 									.format(
 								    tTypeString(hType),
@@ -238,8 +249,6 @@ case object CookJimp extends TCook {
 	override def cook(output: (String) => Writer)(module: Module): Unit =
 		module match {
 			case Module(visibility, isFinal, isEnum, name, parent, interfaces, fields, methods) =>
-				require(name.matches("[\\w\\$]+(/[\\w\\$]+)*"), "Name %s is not conformant".format(name))
-				require(parent.matches("[\\w\\$]+(/[\\w\\$]+)*"), "Name %s is not conformant".format(parent))
 
 				val writer =
 					output(tTypeString(name) + ".jimp")
