@@ -6,8 +6,8 @@ import peterlavalle.jimpifier.ast.typ.ArrayOf
 
 case class Assign(result: TLValue, value: TRValue) extends TSSA {
 	value match {
-		case NewArray(eType, _) =>
-			require(result.tType == ArrayOf(eType ), "Result type of `%s` is not correct for eType `%s`".format(result.tType, eType))
+		case NewArray(aType, _) =>
+			require(result.tType == aType , "Result type of `%s` is not correct for eType `%s`".format(result.tType, aType))
 		case _ =>
 			;
 	}

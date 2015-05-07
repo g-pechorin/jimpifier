@@ -5,6 +5,7 @@ import java.io.ByteArrayInputStream
 import junit.framework.Assert._
 import peterlavalle.jimpifier.ast.Register
 import peterlavalle.jimpifier.ast.lva.Indexor
+import peterlavalle.jimpifier.ast.typ.{ArrayOf, ClassType, Primitive}
 
 
 class GLTronSyntaxTest extends GLTronParseTest {
@@ -13,11 +14,12 @@ class GLTronSyntaxTest extends GLTronParseTest {
 
 	def testArrayLVal(): Unit = {
 		assertEquals(
-			Indexor(Register("$r2", "java/lang/String[]"), Register("$i0", "int")),
+			Indexor(Register("$r2", ArrayOf(ClassType("java/lang/String"))), Register("$i0", Primitive.PInt)),
 			Syntax.lv(
+				List(),
 				_.getText match {
-					case "$r2" => Register("$r2", "java/lang/String[]")
-					case "$i0" => Register("$i0", "int")
+					case "$r2" => Register("$r2", ArrayOf(ClassType("java/lang/String")))
+					case "$i0" => Register("$i0", Primitive.PInt)
 				},
 				parser(
 					new ByteArrayInputStream(

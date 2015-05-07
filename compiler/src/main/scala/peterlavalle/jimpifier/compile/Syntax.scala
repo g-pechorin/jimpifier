@@ -13,13 +13,22 @@ import scala.collection.JavaConversions._
 
 object Syntax {
 
+	def apply(className: ClassnameContext): TType = {
+		val name = className.getText
+
+		if (Primitive ? name)
+			Primitive(name)
+		else
+			ClassType(name.replace('.', '/'))
+	}
+
 	def tType(name: String): TType =
 		if (name.endsWith("[]"))
 			ArrayOf(tType(name.reverse.substring(2).reverse))
 		else if (Primitive ? name)
 			Primitive(name)
 		else
-			ClassType(name)
+			ClassType(name.replace('.', '/'))
 
 	def apply(t: Literal_classContext) = Literal.LiteralClass(t.STRING().getText.substring(1).reverse.substring(1).reverse)
 
@@ -69,14 +78,11 @@ object Syntax {
 
 	def apply(handler: HandlerContext): Handler =
 		Handler(
-			ClassType(handler.classname().getText),
+			apply(handler.classname()),
 			handler.DUMBNAME(0).getText,
 			handler.DUMBNAME(1).getText,
 			handler.DUMBNAME(2).getText
 		)
-
-	def apply(classname: ClassnameContext): TType =
-		tType(classname.getText)
 
 	def apply(typename: TypenameContext): TType =
 		typename.BRACK_CLOSE().foldLeft(Syntax(typename.classname()))((l, r) => ArrayOf(l))
@@ -269,7 +275,7 @@ object Syntax {
 				Assign(
 					lvalue(newarray.lvalue()),
 					NewArray(
-						tType(newarray.typename().getText).asInstanceOf[ArrayOf],
+						ArrayOf(tType(newarray.typename().getText)),
 						rvalue(newarray.rvalue())
 					)
 				)
