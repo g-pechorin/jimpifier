@@ -24,15 +24,14 @@ A binary is probably stuffed in the project tree somewhere.
 
 There's an additional set of tests in `soak.zip` that can be added by running the `soak` goal.
 These were generated the `android.jar` in Version 22 of the ADK.
-They seem a bit excessive - but they're their if you want them. 
+They seem a bit excessive - but they're there if you want them. 
 (If you want to get rid of them - delete your `build/generated/` directory and re-run the `test` goal)
 
 # Flaws
 
 This tool will probably fall-over for a whole bunch of reasons.
 
-* doesn't use consistent type names.
-	* I'd like `foo/bar$Something` but I'm sure it's using `foo.bar$Something` somewhere and wouldn't be surprised to see `foo.bar.Something`
+* line numbers and local variable tables aren't used ... I wish they were here
 * probably can't handle `native`, `interface` or `abstract` methods and classes
 * `jimpifier.ast` and `jimpifier.compiler` should be in separate modules
 	* ... but I know that there's CST -> AST logic in `jimpifier.ast` which shouldn't be there

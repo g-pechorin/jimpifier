@@ -18,7 +18,8 @@ trait TGardener {
 			module.isFinal,
 			module.isEnum,
 			module.name,
-			module.tType,
+			module.parent,
+			module.interfaces,
 			fields(module, module.fields),
 			methods(module, module.methods)
 		)
@@ -31,6 +32,7 @@ trait TGardener {
 			field.visibility,
 			field.isStatic,
 			field.isFinal,
+			field.isEnum,
 			field.name,
 			field.tType
 		)
@@ -105,8 +107,10 @@ trait TGardener {
 				CastValue(tType, rvalue(module, method, block, ssa, value))
 
 			case EnumValue(tType, value) =>
-				EnumValue(tType, rvalue(module, method, block, ssa, value))
-
+				EnumValue(
+					rvalue(module, method, block, ssa, tType).asInstanceOf[Literal.LiteralClass],
+					rvalue(module, method, block, ssa, value)
+				)
 
 			case Indexor(l, r) =>
 				Indexor(lvalue(module, method, block, ssa, l), rvalue(module, method, block, ssa, r))

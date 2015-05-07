@@ -1,14 +1,13 @@
 package peterlavalle.jimpifier.compile
 
 import org.antlr.v4.runtime.tree.TerminalNode
-import peterlavalle.jimpifier.ast.Visibility
-import peterlavalle.jimpifier.ast.typ.{ClassType, Primitive, TType, ArrayOf}
-import peterlavalle.jimpifier.compile.JimpParser._
-import peterlavalle.jimpifier.ast._
 import peterlavalle.jimpifier.ast.lva.{Accessor, Global, Indexor}
 import peterlavalle.jimpifier.ast.rva._
 import peterlavalle.jimpifier.ast.ssa._
 import peterlavalle.jimpifier.ast.tra.{TLValue, TRValue, TSSA}
+import peterlavalle.jimpifier.ast.typ.{ArrayOf, ClassType, Primitive, TType}
+import peterlavalle.jimpifier.ast.{Visibility, _}
+import peterlavalle.jimpifier.compile.JimpParser._
 
 import scala.collection.JavaConversions._
 
@@ -44,6 +43,7 @@ object Syntax {
 				case "protected" => Visibility.Protected
 			}
 
+
 	def apply(module: ModuleContext): Module = {
 		Module(
 			isFinal = null != module.K_final(),
@@ -51,6 +51,7 @@ object Syntax {
 			visibility = Syntax(module.K_visibility()),
 			name = tType(module.classname(0).getText),
 			parent = tType(module.classname(1).getText),
+			interfaces = module.classname().drop(2).map(apply).toList,
 			fields = module.field().map(apply).toList,
 			methods = module.method().map(apply).toList
 		)
@@ -61,6 +62,7 @@ object Syntax {
 			visibility = Syntax(field.K_visibility()),
 			isStatic = null != field.K_static(),
 			isFinal = null != field.K_final(),
+			isEnum = null != field.K_enum(),
 			name = field.DUMBNAME().getText,
 			tType = tType(field.typename().getText)
 		)
@@ -83,13 +85,13 @@ object Syntax {
 		registers.REGISTER().map(_.getText).map(Register(_, apply(registers.typename()))).toList
 	}
 
-	def lv(lookup: (TerminalNode => Register), context: LvalueContext): TLValue = {
+	def lv(args: List[TType], lookup: (TerminalNode => Register), context: LvalueContext): TLValue = {
 		context match {
 			case array: Lval_arrayContext =>
-				Indexor(lv(lookup, array.lvalue()), rv(lookup, array.rvalue()))
+				Indexor(lv(args, lookup, array.lvalue()), rv(args, lookup, array.rvalue()))
 
 			case field: Lval_fieldContext =>
-				lv(lookup, field.lvalue()) match {
+				lv(args, lookup, field.lvalue()) match {
 					case Global(container, name) =>
 						Global(container ++ List(name), field.DUMBNAME().getText)
 					case other: TLValue =>
@@ -107,7 +109,7 @@ object Syntax {
 		}
 	}
 
-	def rv(lookup: (TerminalNode => Register), context: RvalueContext): TRValue =
+	def rv(args: List[TType], lookup: (TerminalNode => Register), context: RvalueContext): TRValue =
 		context match {
 
 			case classOf: Literal_classContext =>
@@ -118,15 +120,15 @@ object Syntax {
 
 			case enum: EnumValueOfContext =>
 				EnumValue(
-					enum.STRING().getText.substring(1).reverse.substring(1).reverse,
-					rv(lookup, enum.rvalue())
+					Literal.LiteralClass(enum.STRING().getText.substring(1).reverse.substring(1).reverse),
+					rv(args, lookup, enum.rvalue())
 				)
 
 			case float: Literal_floatContext =>
 				Syntax(float)
 
 			case length: LengthContext =>
-				LengthOf(Syntax.rv(lookup, length.rvalue()))
+				LengthOf(Syntax.rv(args, lookup, length.rvalue()))
 
 			case integer: Literal_integerContext =>
 				Syntax(integer)
@@ -135,10 +137,10 @@ object Syntax {
 				Syntax(long)
 
 			case lval: Rvalue_lvalueContext =>
-				Syntax.lv(lookup, lval.lvalue())
+				Syntax.lv(args, lookup, lval.lvalue())
 
 			case negate: NegationContext =>
-				NegateValue(rv(lookup, negate.rvalue()))
+				NegateValue(rv(args, lookup, negate.rvalue()))
 
 			case _: Literal_nullContext =>
 				Literal.Null
@@ -149,7 +151,8 @@ object Syntax {
 					case "@this" =>
 						Literal.This
 					case parameter(s) =>
-						Literal.Parameter(s.toInt)
+						val i: Int = s.toInt
+						Literal.Parameter(i, args(i))
 					case "@caughtexception" =>
 						Literal.CaughtException
 				}
@@ -161,7 +164,7 @@ object Syntax {
 				sys.error(wat.getClass.toString)
 		}
 
-	def apply(registers: List[Register], statement: StatementContext): TSSA = {
+	def apply(args: List[TType], registers: List[Register], statement: StatementContext): TSSA = {
 
 		def lookup(register: TerminalNode): Register = {
 			require(null != register)
@@ -174,8 +177,8 @@ object Syntax {
 			}
 		}
 
-		def rvalue(context: RvalueContext): TRValue = Syntax.rv(lookup, context)
-		def lvalue(context: LvalueContext): TLValue = Syntax.lv(lookup, context)
+		def rvalue(context: RvalueContext): TRValue = Syntax.rv(args, lookup, context)
+		def lvalue(context: LvalueContext): TLValue = Syntax.lv(args, lookup, context)
 
 		statement match {
 
@@ -298,14 +301,16 @@ object Syntax {
 
 		// TODO ; build the blocks "here" but use the handlers to infer which type the @caughtexception is
 
+		val args = method.typename().tail.map(apply).toList
+
 		Method(
 			visibility = Syntax(method.K_visibility()),
 			isStatic = null != method.K_static(),
 			name = method.method_name().getText,
-			args = method.typename().tail.map(apply).toList,
+			args = args,
 			tType = tType(method.typename().head.getText),
 			registers = registers,
-			blocks = Block(null, method.statement().map(Syntax(registers, _)).toList) :: method.block().map(b => Block(b.DUMBNAME().getText, b.statement().map(Syntax(registers, _)).toList)).toList,
+			blocks = Block(null, method.statement().map(Syntax(args, registers, _)).toList) :: method.block().map(b => Block(b.DUMBNAME().getText, b.statement().map(Syntax(args, registers, _)).toList)).toList,
 			handlers = method.handler().map(apply).toList
 		)
 	}

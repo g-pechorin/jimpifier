@@ -13,10 +13,10 @@ class GLTronSyntaxTest extends GLTronParseTest {
 
 	def testArrayLVal(): Unit = {
 		assertEquals(
-			Indexor(Register("$r2", "java.lang.String[]"), Register("$i0", "int")),
+			Indexor(Register("$r2", "java/lang/String[]"), Register("$i0", "int")),
 			Syntax.lv(
 				_.getText match {
-					case "$r2" => Register("$r2", "java.lang.String[]")
+					case "$r2" => Register("$r2", "java/lang/String[]")
 					case "$i0" => Register("$i0", "int")
 				},
 				parser(
