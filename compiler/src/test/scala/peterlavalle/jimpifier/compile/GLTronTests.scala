@@ -138,6 +138,7 @@ class R$layout_test extends AJimpTest("com.glTron.R$layout.jimp") {
 				Visibility.Public,
 				isStatic = true,
 				isFinal = true,
+				isEnum = true,
 				name = "main",
 				tType = "int"
 			),

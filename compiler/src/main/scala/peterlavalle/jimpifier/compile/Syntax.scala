@@ -42,7 +42,8 @@ object Syntax {
 			isEnum = null != module.K_enum(),
 			visibility = Syntax(module.K_visibility()),
 			name = apply(module.classname(0)),
-			tType = apply(module.classname(1)),
+			parent = apply(module.classname(1)),
+			interfaces = module.classname().drop(2).map(apply).toList,
 			fields = module.field().map(apply).toList,
 			methods = module.method().map(apply).toList
 		)
@@ -53,6 +54,7 @@ object Syntax {
 			visibility = Syntax(field.K_visibility()),
 			isStatic = null != field.K_static(),
 			isFinal = null != field.K_final(),
+			isEnum = null != field.K_enum(),
 			name = field.DUMBNAME().getText,
 			tType = field.typename().getText)
 	}
@@ -109,7 +111,7 @@ object Syntax {
 
 			case enum: EnumValueOfContext =>
 				EnumValue(
-					enum.STRING().getText.substring(1).reverse.substring(1).reverse,
+					Literal.LiteralClass(enum.STRING().getText.substring(1).reverse.substring(1).reverse),
 					rv(lookup, enum.rvalue())
 				)
 

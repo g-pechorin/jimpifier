@@ -4,22 +4,55 @@ import peterlavalle.jimpifier.ast.tra.{TLValue, TRValue, TSSA}
 
 object Branch {
 
-	sealed trait TConditionalBranch extends TSSA {
-		override val result: TLValue = null
+	sealed trait TBranch {
 		val label: String
 	}
 
-	case class IsEqual(l: TRValue, r: TRValue, label: String) extends TConditionalBranch
-	case class NotEqual(l: TRValue, r: TRValue, label: String) extends TConditionalBranch
-	case class GreaterEqual(l: TRValue, r: TRValue, label: String) extends TConditionalBranch
-	case class GreaterThan(l: TRValue, r: TRValue, label: String) extends TConditionalBranch
-	case class LessEqual(l: TRValue, r: TRValue, label: String) extends TConditionalBranch
-	case class LessThan(l: TRValue, r: TRValue, label: String) extends TConditionalBranch
+	sealed trait TConditionalBranch extends TBranch with TSSA {
+		val l: TRValue
+		val o: String
+		val r: TRValue
+		override val result: TLValue = null
+	}
 
-	case class GoTo(label: String) extends TConditionalBranch
+	def unapply(obj: AnyRef) =
+		obj match {
+			case con: TConditionalBranch =>
+				Option(con.l, con.o, con.r, con.label)
+			case _ =>
+				None
+		}
+
+	case class IsEqual(l: TRValue, r: TRValue, label: String) extends TConditionalBranch {
+		val o = "=="
+	}
+
+	case class NotEqual(l: TRValue, r: TRValue, label: String) extends TConditionalBranch {
+		val o = "!="
+	}
+
+	case class GreaterEqual(l: TRValue, r: TRValue, label: String) extends TConditionalBranch {
+		val o = ">="
+	}
+
+	case class GreaterThan(l: TRValue, r: TRValue, label: String) extends TConditionalBranch {
+		val o = ">"
+	}
+
+	case class LessEqual(l: TRValue, r: TRValue, label: String) extends TConditionalBranch {
+		val o = "<="
+	}
+
+	case class LessThan(l: TRValue, r: TRValue, label: String) extends TConditionalBranch {
+		val o = "<"
+	}
+
+	case class GoTo(label: String) extends TBranch with TSSA {
+		override val result: TLValue = null
+	}
 
 
-	sealed trait TSwitchBranch
+	sealed trait TSwitchBranch extends TBranch
 
 	case class Case(i: Int, label: String) extends TSwitchBranch
 
