@@ -17,3 +17,33 @@ allprojects {
 		testCompile 'junit:junit:4.6'
 	}
 }
+
+task avian {
+	ext.avianSig = '7be8d8551a23a24707a4adb99a885396d87df5ab'
+	ext.avianURL = 'https://github.com/ReadyTalk/avian/archive/7be8d8551a23a24707a4adb99a885396d87df5ab.zip'
+	ext.avianCache = file('build/avian.zip')
+	ext.avianDump = file('build/generated/avian')
+	
+	outputs.upToDateWhen { false }
+	
+	doFirst {
+		print ('here we go!')
+		
+		assert(avianCache.parentFile.exists() || avianCache.parentFile.mkdirs())
+		
+		ant.get(
+			src: avianURL,
+			dest: avianCache,
+			skipexisting: true
+		)
+		
+		assert(avianDump.exists() || avianDump.mkdirs())
+		
+		ant.unzip(src: avianCache, dest: avianDump) {
+			patternset {
+				include(name: "*/classpath/**/*.java")
+			}
+			mapper(type: 'regexp', from: '[^/]+/classpath/(.*\\.java)', to: '\\1')
+		}
+	}
+}
